@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Monkey</title>
+    <style>
+        /* Main container styling */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f0f2f5;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        /* Monkey character styling */
+        .monkey {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .face {
+            width: 100px;
+            height: 100px;
+            background: #b97a57;
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .ears {
+            position: absolute;
+            width: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .ear {
+            width: 40px;
+            height: 40px;
+            background: #b97a57;
+            border-radius: 50%;
+            position: absolute;
+            top: -10px;
+        }
+
+        .ear.left { left: 0; }
+        .ear.right { right: 0; }
+
+        .eyes {
+            position: absolute;
+            width: 80px;
+            height: 30px;
+            top: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.3s ease;
+        }
+
+        .eye {
+            width: 25px;
+            height: 25px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+        }
+
+        .eye.left { left: 10px; }
+        .eye.right { right: 10px; }
+
+        .pupil {
+            width: 12px;
+            height: 12px;
+            background: #333;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+
+        .hands {
+            position: absolute;
+            width: 120px;
+            height: 40px;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .hand {
+            width: 40px;
+            height: 40px;
+            background: #b97a57;
+            border-radius: 20px;
+            position: absolute;
+        }
+
+        .hand.left { left: 5px; }
+        .hand.right { right: 5px; }
+
+        .mouth {
+            width: 30px;
+            height: 15px;
+            border-radius: 0 0 30px 30px;
+            background: #8b5e3c;
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.3s ease;
+        }
+
+        /* Password input styling */
+        .password-container {
+            position: relative;
+            margin-top: 20px;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        /* Strength indicator */
+        .strength-meter {
+            height: 5px;
+            background: #ddd;
+            margin-top: 10px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .strength-text {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Monkey states */
+        .monkey.peek .hands { opacity: 0.7; transform: translateX(-50%) translateY(15px); }
+        .monkey.typing .hands { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .monkey.weak .mouth { border-radius: 30px 30px 0 0; height: 10px; bottom: 20px; }
+        .monkey.medium .mouth { height: 10px; width: 25px; }
+        .monkey.strong .mouth { height: 20px; width: 40px; border-radius: 0 0 40px 40px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="monkey">
+            <div class="ears">
+                <div class="ear left"></div>
+                <div class="ear right"></div>
+            </div>
+            <div class="face">
+                <div class="eyes">
+                    <div class="eye left"><div class="pupil"></div></div>
+                    <div class="eye right"><div class="pupil"></div></div>
+                </div>
+                <div class="hands">
+                    <div class="hand left"></div>
+                    <div class="hand right"></div>
+                </div>
+                <div class="mouth"></div>
+            </div>
+        </div>
+        <div class="password-container">
+            <input type="password" id="passwordInput" placeholder="Enter your password">
+            <div class="strength-meter"></div>
+            <div class="strength-text">Password strength</div>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const monkey = document.querySelector('.monkey');
+        const passwordInput = document.getElementById('passwordInput');
+        const strengthMeter = document.querySelector('.strength-meter');
+        const strengthText = document.querySelector('.strength-text');
+
+        // Password strength criteria
+        const hasLower = /[a-z]/;
+        const hasUpper = /[A-Z]/;
+        const hasNumber = /[0-9]/;
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/;
+
+        // Calculate password strength
+        function calculateStrength(password) {
+            if (!password) return 0;
+            
+            let strength = 0;
+            if (password.length >= 8) strength += 25;
+            if (hasLower.test(password)) strength += 25;
+            if (hasUpper.test(password)) strength += 25;
+            if (hasNumber.test(password)) strength += 15;
+            if (hasSpecial.test(password)) strength += 10;
+            
+            return Math.min(100, strength);
+        }
+
+        // Update monkey state and strength indicators
+        function updateUI(strength) {
+            // Reset all states
+            monkey.classList.remove('peek', 'typing', 'weak', 'medium', 'strong');
+            
+            if (!passwordInput.value) {
+                monkey.classList.add('peek');
+                strengthMeter.style.width = '0%';
+                strengthMeter.style.background = '#ddd';
+                strengthText.textContent = 'Password strength';
+                return;
+            }
+
+            monkey.classList.add('typing');
+            
+            if (strength < 40) {
+                monkey.classList.add('weak');
+                strengthMeter.style.background = '#ff4444';
+                strengthText.textContent = 'Weak password';
+            } else if (strength < 75) {
+                monkey.classList.add('medium');
+                strengthMeter.style.background = '#ffa700';
+                strengthText.textContent = 'Medium password';
+            } else {
+                monkey.classList.add('strong');
+                strengthMeter.style.background = '#00cc00';
+                strengthText.textContent = 'Strong password';
+            }
+
+            strengthMeter.style.width = strength + '%';
+        }
+
+        // Event listeners
+        passwordInput.addEventListener('input', () => {
+            const strength = calculateStrength(passwordInput.value);
+            updateUI(strength);
+        });
+
+        // Initial state
+        updateUI(0);
+    </script>
+</body>
+</html>

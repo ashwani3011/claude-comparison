@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Monkey Gemini</title>
+    <style>
+        /* Basic page styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+            overflow: hidden; /* Prevents scrollbars from appearing during animations */
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 350px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        /* Password input field styling */
+        #passwordField {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        #passwordField:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        /* Password strength indicator styling */
+        #strengthIndicator {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 10px;
+            height: 20px; /* Reserve space to prevent layout shifts */
+        }
+
+        #strengthText {
+            font-weight: bold;
+        }
+
+        /* Monkey character styling */
+        .monkey-container {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px auto;
+            position: relative;
+        }
+
+        #monkey {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.3s ease-out; /* For subtle movements */
+        }
+
+        /* Monkey parts - general */
+        .monkey-head {
+            width: 90px;
+            height: 80px;
+            background-color: #a0522d; /* SaddleBrown */
+            border-radius: 50% 50% 45% 45%;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+            border: 3px solid #65350F; /* Darker brown border */
+        }
+
+        .monkey-face {
+            width: 60px;
+            height: 50px;
+            background-color: #f5deb3; /* Wheat */
+            border-radius: 50% 50% 40% 40%;
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+        
+        .monkey-ear {
+            width: 30px;
+            height: 30px;
+            background-color: #a0522d;
+            border: 2px solid #65350F;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 65px; /* Aligned with head */
+            z-index: 0;
+        }
+
+        .monkey-ear.left {
+            left: 15px;
+        }
+
+        .monkey-ear.right {
+            right: 15px;
+        }
+        
+        .monkey-ear-inner {
+            width: 18px;
+            height: 18px;
+            background-color: #f5deb3; /* Wheat */
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .monkey-eyes {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 15px;
+            z-index: 3;
+        }
+
+        .monkey-eye {
+            width: 12px;
+            height: 12px;
+            background-color: #2c3e50; /* Dark blue/black for eyes */
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.3s ease;
+        }
+
+        .monkey-eye.left { left: 0; }
+        .monkey-eye.right { right: 0; }
+        
+        .pupil { /* Small highlight */
+            width: 4px;
+            height: 4px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+        }
+
+        .monkey-mouth {
+            width: 20px;
+            height: 5px;
+            background-color: #2c3e50;
+            border-radius: 0 0 10px 10px; /* Simple smile */
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            transition: all 0.3s ease;
+        }
+
+        .monkey-hands {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 4;
+        }
+
+        .monkey-hand {
+            width: 40px;
+            height: 35px;
+            background-color: #a0522d;
+            border: 2px solid #65350F;
+            border-radius: 15px 15px 10px 10px;
+            position: absolute;
+            top: 45px; /* Position over eyes */
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Bouncy transition */
+        }
+
+        .monkey-hand.left {
+            left: 20px;
+            transform: rotate(-15deg) translateX(200%); /* Initially off-screen */
+        }
+
+        .monkey-hand.right {
+            right: 20px;
+            transform: rotate(15deg) translateX(-200%); /* Initially off-screen */
+        }
+        
+        /* --- Monkey States --- */
+
+        /* State: Peeking (default, field empty) */
+        #monkey.peek .monkey-hand.left { transform: rotate(-20deg) translateX(20px) translateY(-5px); }
+        #monkey.peek .monkey-hand.right { transform: rotate(20deg) translateX(-20px) translateY(-5px); }
+        #monkey.peek .monkey-eye { height: 6px; top: 3px; } /* Squinting/peeking eyes */
+        #monkey.peek .monkey-mouth { height: 3px; width: 15px; border-radius: 3px; }
+
+        /* State: Typing (field focused) */
+        #monkey.typing .monkey-hand.left { transform: rotate(-10deg) translateX(5px) translateY(0px); }
+        #monkey.typing .monkey-hand.right { transform: rotate(10deg) translateX(-5px) translateY(0px); }
+        #monkey.typing .monkey-eye { background-color: transparent; } /* Eyes hidden by hands */
+        #monkey.typing .pupil { background-color: transparent; }
+        #monkey.typing .monkey-mouth { transform: translateX(-50%) scaleY(0.8); } /* Mouth slightly compressed */
+
+        /* State: Weak Password */
+        #monkey.weak .monkey-eye { width: 14px; height: 14px; } /* Wider eyes */
+        #monkey.weak .monkey-eye.left { transform: translateX(-2px); }
+        #monkey.weak .monkey-eye.right { transform: translateX(2px); }
+        #monkey.weak .monkey-mouth {
+            height: 10px; width: 18px;
+            border-radius: 20px 20px 0 0; /* Frown */
+            background-color: #e74c3c; /* Reddish for worry */
+            bottom: 5px;
+        }
+        #monkey.weak { transform: rotate(-3deg) translateY(2px); } /* Slight tilt/shiver */
+
+        /* State: Medium Password */
+        #monkey.medium .monkey-eye { width: 12px; height: 12px; } /* Normal eyes */
+        #monkey.medium .monkey-mouth {
+            width: 22px; height: 3px;
+            border-radius: 3px;
+            background-color: #f39c12; /* Orange for cautious */
+        }
+        #monkey.medium { transform: translateY(-2px); } /* Slight lift */
+        
+
+        /* State: Strong Password */
+        #monkey.strong .monkey-eye { width: 14px; height: 16px; } /* Excited, slightly taller eyes */
+        #monkey.strong .monkey-eye.left { transform: rotate(-10deg); }
+        #monkey.strong .monkey-eye.right { transform: rotate(10deg); }
+        #monkey.strong .monkey-mouth {
+            width: 30px; height: 15px;
+            border-radius: 0 0 15px 15px; /* Big smile */
+            background-color: #2ecc71; /* Green for happy */
+            bottom: 2px;
+        }
+        #monkey.strong { transform: scale(1.05) rotate(3deg); } /* Excited bounce */
+
+
+        /* Hands down for strength states */
+        #monkey.weak .monkey-hand.left,
+        #monkey.medium .monkey-hand.left,
+        #monkey.strong .monkey-hand.left {
+            transform: rotate(-30deg) translateX(-45px) translateY(50px);
+        }
+        #monkey.weak .monkey-hand.right,
+        #monkey.medium .monkey-hand.right,
+        #monkey.strong .monkey-hand.right {
+            transform: rotate(30deg) translateX(45px) translateY(50px);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Password Monkey Gemini</h1>
+
+        <div class="monkey-container">
+            <div id="monkey" class="peek"> <!-- Initial state: peeking -->
+                <div class="monkey-ear left"><div class="monkey-ear-inner"></div></div>
+                <div class="monkey-ear right"><div class="monkey-ear-inner"></div></div>
+                <div class="monkey-head">
+                    <div class="monkey-face">
+                        <div class="monkey-eyes">
+                            <div class="monkey-eye left"><div class="pupil"></div></div>
+                            <div class="monkey-eye right"><div class="pupil"></div></div>
+                        </div>
+                        <div class="monkey-mouth"></div>
+                    </div>
+                </div>
+                <div class="monkey-hands">
+                    <div class="monkey-hand left"></div>
+                    <div class="monkey-hand right"></div>
+                </div>
+            </div>
+        </div>
+
+        <input type="password" id="passwordField" placeholder="Enter your password...">
+        
+        <div id="strengthIndicator">
+            Strength: <span id="strengthText" data-strength="empty">Empty</span>
+        </div>
+    </div>
+
+    <script>
+        const passwordField = document.getElementById('passwordField');
+        const monkey = document.getElementById('monkey');
+        const strengthText = document.getElementById('strengthText');
+
+        // Function to update monkey state and strength text
+        function updateMonkeyAppearance(password) {
+            const strength = checkPasswordStrength(password);
+            let strengthLabel = 'Empty';
+            let monkeyClass = 'peek'; // Default for empty
+
+            if (password.length === 0 && document.activeElement !== passwordField) {
+                strengthLabel = 'Empty';
+                monkeyClass = 'peek';
+            } else if (document.activeElement === passwordField) {
+                 // While typing, the monkey is always in 'typing' state, strength calculated but visual reaction deferred
+                monkeyClass = 'typing';
+                // Strength label can still update while typing
+                if (password.length > 0) {
+                    if (strength < 2) strengthLabel = 'Weak';
+                    else if (strength < 4) strengthLabel = 'Medium';
+                    else strengthLabel = 'Strong';
+                } else {
+                    strengthLabel = 'Empty'; // Or 'Typing...'
+                }
+            } else if (password.length > 0) { // Blurred and has content
+                if (strength < 2) {
+                    strengthLabel = 'Weak';
+                    monkeyClass = 'weak';
+                } else if (strength < 4) {
+                    strengthLabel = 'Medium';
+                    monkeyClass = 'medium';
+                } else {
+                    strengthLabel = 'Strong';
+                    monkeyClass = 'strong';
+                }
+            }
+            
+            strengthText.textContent = strengthLabel;
+            strengthText.dataset.strength = strengthLabel.toLowerCase(); // For potential styling
+            monkey.className = monkeyClass; // Set the primary state class
+        }
+
+        // Password strength checking function
+        function checkPasswordStrength(password) {
+            let score = 0;
+            if (!password) return 0;
+
+            // Award points for different criteria
+            if (password.length >= 8) score++;
+            if (password.length >= 12) score++;
+            if (/[a-z]/.test(password)) score++; // Lowercase
+            if (/[A-Z]/.test(password)) score++; // Uppercase
+            if (/[0-9]/.test(password)) score++; // Numbers
+            if (/[^a-zA-Z0-9]/.test(password)) score++; // Symbols
+
+            // Adjust score interpretation:
+            // <2: Weak (0-1 points from criteria like length<8, or just one type of char)
+            // <4: Medium (2-3 points, e.g. length >= 8 + one other criterion)
+            // >=4: Strong (4+ points)
+
+            if (password.length < 4) return 0; // Very weak if too short
+            if (password.length < 8 && score <= 2) return 1; // Weak
+
+            return score;
+        }
+
+        // Event Listeners
+        passwordField.addEventListener('focus', () => {
+            updateMonkeyAppearance(passwordField.value);
+        });
+
+        passwordField.addEventListener('input', () => {
+            updateMonkeyAppearance(passwordField.value);
+        });
+
+        passwordField.addEventListener('blur', () => {
+            // On blur, if empty, peek. If not, show strength reaction.
+            updateMonkeyAppearance(passwordField.value);
+        });
+
+        // Initial state update
+        updateMonkeyAppearance('');
+
+    </script>
+
+</body>
+</html>
