@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestone Celebration - GPT</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f7f9fc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .milestone-celebration {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 32px 28px 28px 28px;
+            width: 400px;
+            max-width: 90vw;
+        }
+        .milestone-celebration h2 {
+            margin: 0 0 18px 0;
+            text-align: center;
+            color: #333;
+            font-size: 22px;
+        }
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 18px 0;
+        }
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .task-item:last-child {
+            border-bottom: none;
+        }
+        .task-checkbox {
+            margin-right: 14px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .task-label {
+            flex: 1;
+            font-size: 16px;
+            color: #444;
+        }
+        .progress-bar {
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin: 18px 0 10px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #00bcd4);
+            transition: width 0.3s cubic-bezier(.4,2,.6,1);
+            width: 0%;
+        }
+        .milestone-message {
+            text-align: center;
+            font-weight: bold;
+            color: #4CAF50;
+            height: 24px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .milestone-message.show {
+            opacity: 1;
+        }
+        /* Confetti canvas covers viewport */
+        canvas.confetti-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<div class="milestone-celebration">
+    <h2>Milestone Celebration - GPT</h2>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="milestone-message" id="milestoneMessage">
+        Milestone Complete! 🎉
+    </div>
+    <ul class="task-list" id="taskList">
+        <li class="task-item">
+            <input type="checkbox" class="task-checkbox" id="task1">
+            <label for="task1" class="task-label">Step 1: Plan</label>
+        </li>
+        <li class="task-item">
+            <input type="checkbox" class="task-checkbox" id="task2">
+            <label for="task2" class="task-label">Step 2: Build</label>
+        </li>
+        <li class="task-item">
+            <input type="checkbox" class="task-checkbox" id="task3">
+            <label for="task3" class="task-label">Step 3: Test</label>
+        </li>
+        <li class="task-item">
+            <input type="checkbox" class="task-checkbox" id="task4">
+            <label for="task4" class="task-label">Step 4: Launch</label>
+        </li>
+    </ul>
+</div>
+<script>
+// --- Confetti Celebration Component ---
+// This script tracks task completion and triggers confetti when all are done.
+
+// Confetti color palette
+const confettiColors = [
+    '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
+    '#2196f3', '#03a9f4', '#00bcd4', '#4CAF50', '#8bc34a',
+    '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'
+];
+
+// Confetti state
+let canvas = null;
+let context = null;
+let confettiParticles = [];
+let confettiAnimation = null;
+
+// Task/progress state
+const checkboxes = document.querySelectorAll('.task-checkbox');
+const progressFill = document.getElementById('progressFill');
+const milestoneMessage = document.getElementById('milestoneMessage');
+
+// Add event listeners to all checkboxes
+checkboxes.forEach(cb => cb.addEventListener('change', updateProgress));
+
+// Main function: tracks progress and triggers confetti
+function updateProgress() {
+    // Count completed tasks
+    const total = checkboxes.length;
+    let completed = 0;
+    checkboxes.forEach(cb => { if (cb.checked) completed++; });
+    // Update progress bar
+    const percent = (completed / total) * 100;
+    progressFill.style.width = percent + '%';
+    // If all tasks complete, show message and confetti
+    if (completed === total) {
+        milestoneMessage.classList.add('show');
+        startConfetti(); // <-- Confetti trigger
+    } else {
+        milestoneMessage.classList.remove('show');
+        stopConfetti(); // <-- Confetti stops if any task is undone
+    }
+}
+
+// --- Confetti Animation Functions ---
+function startConfetti() {
+    if (canvas) return; // Already running
+    // Create canvas
+    canvas = document.createElement('canvas');
+    canvas.className = 'confetti-canvas';
+    document.body.appendChild(canvas);
+    resizeCanvas();
+    context = canvas.getContext('2d');
+    // Create confetti particles
+    confettiParticles = [];
+    for (let i = 0; i < 120; i++) {
+        confettiParticles.push(createParticle());
+    }
+    confettiAnimation = requestAnimationFrame(animateConfetti);
+}
+function stopConfetti() {
+    if (confettiAnimation) {
+        cancelAnimationFrame(confettiAnimation);
+        confettiAnimation = null;
+    }
+    if (canvas) {
+        document.body.removeChild(canvas);
+        canvas = null;
+        context = null;
+        confettiParticles = [];
+    }
+}
+function createParticle() {
+    // Each confetti piece has random position, color, size, speed, and rotation
+    return {
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * -window.innerHeight,
+        size: Math.random() * 10 + 6,
+        color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+        speed: Math.random() * 2 + 2,
+        angle: Math.random() * 360,
+        rotation: Math.random() * 4 - 2,
+        horizontal: Math.random() * 2 - 1
+    };
+}
+function animateConfetti() {
+    if (!context || !canvas) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < confettiParticles.length; i++) {
+        const p = confettiParticles[i];
+        // Update position
+        p.y += p.speed;
+        p.x += p.horizontal;
+        p.angle += p.rotation;
+        // Draw confetti piece
+        context.save();
+        context.translate(p.x, p.y);
+        context.rotate(p.angle * Math.PI / 180);
+        context.fillStyle = p.color;
+        context.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+        context.restore();
+        // If below screen, respawn at top
+        if (p.y > window.innerHeight) {
+            confettiParticles[i] = createParticle();
+            confettiParticles[i].y = -20;
+        }
+    }
+    confettiAnimation = requestAnimationFrame(animateConfetti);
+}
+// Responsive canvas
+function resizeCanvas() {
+    if (canvas) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+}
+window.addEventListener('resize', resizeCanvas);
+
+// Optionally, initialize progress on load
+updateProgress();
+
+// --- End Confetti Celebration Component ---
+</script>
+</body>
+</html>
