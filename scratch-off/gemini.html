@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch-to-Reveal: Gemini's Version</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column; /* Arranges items vertically */
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            gap: 30px; /* Adds space between heading and card */
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .scratch-container {
+            position: relative;
+            width: 500px;
+            height: 250px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .scratch-bottom-layer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+            color: #fff;
+            font-size: 3rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.25);
+        }
+
+        #scratch-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Built by Gemini ✨</h1>
+
+<div class="scratch-container">
+    <div class="scratch-bottom-layer">
+        You Won! 🎉
+    </div>
+    <canvas id="scratch-canvas"></canvas>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('scratch-canvas');
+        const container = canvas.parentElement;
+        const ctx = canvas.getContext('2d');
+
+        const width = container.offsetWidth;
+        const height = container.offsetHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        const scratchColor = '#707070'; 
+        ctx.fillStyle = scratchColor;
+        ctx.fillRect(0, 0, width, height);
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function getMousePos(canvasDom, event) {
+            const rect = canvasDom.getBoundingClientRect();
+            return {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            };
+        }
+
+        function scratch(e) {
+            if (!isDrawing) return;
+            e.preventDefault(); 
+
+            const mousePos = getMousePos(canvas, e);
+
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineWidth = 40;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(mousePos.x, mousePos.y);
+            ctx.stroke();
+
+            [lastX, lastY] = [mousePos.x, mousePos.y];
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const mousePos = getMousePos(canvas, e);
+            [lastX, lastY] = [mousePos.x, mousePos.y];
+        });
+
+        canvas.addEventListener('mousemove', scratch);
+        
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseout', () => isDrawing = false);
+
+        canvas.addEventListener('touchstart', (e) => {
+            isDrawing = true;
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }, false);
+
+        canvas.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }, false);
+
+        canvas.addEventListener('touchend', () => {
+            const mouseEvent = new MouseEvent('mouseup', {});
+            canvas.dispatchEvent(mouseEvent);
+        }, false);
+    });
+</script>
+
+</body>
+</html>
