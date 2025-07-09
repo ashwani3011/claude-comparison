@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake Game - GPT</title>
+  <style>
+    body {
+      background: #181c1f;
+      color: #fff;
+      font-family: 'Press Start 2P', monospace, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 8px #0ff;
+    }
+    #game-container {
+      background: #222;
+      border: 6px solid #0ff;
+      box-shadow: 0 0 32px #0ff6, 0 0 8px #0ff6 inset;
+      border-radius: 12px;
+      margin-bottom: 18px;
+      position: relative;
+    }
+    #game {
+      display: grid;
+      grid-template-rows: repeat(20, 24px);
+      grid-template-columns: repeat(20, 24px);
+      gap: 1px;
+      background: #111;
+      border-radius: 8px;
+    }
+    .cell {
+      width: 24px;
+      height: 24px;
+      background: #181c1f;
+      border-radius: 4px;
+      transition: background 0.1s;
+    }
+    .snake {
+      background: linear-gradient(135deg, #0ff 60%, #0f0 100%);
+      box-shadow: 0 0 8px #0ffb, 0 0 2px #0f0b;
+    }
+    .snake-head {
+      background: linear-gradient(135deg, #fff 60%, #0ff 100%);
+      box-shadow: 0 0 16px #fff8, 0 0 4px #0ffb;
+    }
+    .food {
+      background: radial-gradient(circle, #ff0 60%, #f80 100%);
+      box-shadow: 0 0 12px #ff08, 0 0 2px #f80b;
+      animation: food-pulse 0.7s infinite alternate;
+    }
+    @keyframes food-pulse {
+      0% { filter: brightness(1); }
+      100% { filter: brightness(1.5); }
+    }
+    #score {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+      text-shadow: 0 1px 4px #0ffb;
+    }
+    #game-over {
+      display: none;
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(24,28,31,0.98);
+      border: 3px solid #f00;
+      border-radius: 10px;
+      padding: 32px 40px;
+      text-align: center;
+      z-index: 10;
+      box-shadow: 0 0 32px #f008;
+    }
+    #game-over h2 {
+      color: #f00;
+      margin: 0 0 12px 0;
+      font-size: 2em;
+      text-shadow: 0 2px 8px #f00b;
+    }
+    #restart-btn {
+      background: #0ff;
+      color: #181c1f;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 28px;
+      font-size: 1.1em;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 2px 8px #0ff8;
+      transition: background 0.2s, color 0.2s;
+    }
+    #restart-btn:hover {
+      background: #fff;
+      color: #0ff;
+    }
+    @media (max-width: 600px) {
+      #game {
+        grid-template-rows: repeat(20, 16px);
+        grid-template-columns: repeat(20, 16px);
+      }
+      .cell {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h1>🐍 SNAKE - GPT</h1>
+  <div id="score">Score: 0</div>
+  <div id="game-container">
+    <div id="game"></div>
+    <div id="game-over">
+      <h2>Game Over!</h2>
+      <div id="final-score"></div>
+      <button id="restart-btn">Restart</button>
+    </div>
+  </div>
+  <audio id="eat-sound" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae1e2.mp3" preload="auto"></audio>
+  <audio id="gameover-sound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9b7b7b.mp3" preload="auto"></audio>
+  <script>
+    // --- Game Config ---
+    const GRID_SIZE = 20;
+    const INITIAL_SNAKE = [ {x: 9, y: 10}, {x: 8, y: 10} ];
+    const INITIAL_DIRECTION = {x: 1, y: 0};
+    const SPEED = 110; // ms per move
+
+    // --- State ---
+    let snake = [];
+    let direction = {x: 1, y: 0};
+    let nextDirection = {x: 1, y: 0};
+    let food = null;
+    let score = 0;
+    let interval = null;
+    let gameOver = false;
+
+    // --- DOM ---
+    const game = document.getElementById('game');
+    const scoreDiv = document.getElementById('score');
+    const gameOverDiv = document.getElementById('game-over');
+    const finalScoreDiv = document.getElementById('final-score');
+    const restartBtn = document.getElementById('restart-btn');
+    const eatSound = document.getElementById('eat-sound');
+    const gameoverSound = document.getElementById('gameover-sound');
+
+    // --- Grid Setup ---
+    function createGrid() {
+      game.innerHTML = '';
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.id = `cell-${x}-${y}`;
+          game.appendChild(cell);
+        }
+      }
+    }
+
+    // --- Game Logic ---
+    function resetGame() {
+      snake = [...INITIAL_SNAKE.map(seg => ({...seg}))];
+      direction = {...INITIAL_DIRECTION};
+      nextDirection = {...INITIAL_DIRECTION};
+      score = 0;
+      gameOver = false;
+      placeFood();
+      updateScore();
+      render();
+      gameOverDiv.style.display = 'none';
+      if (interval) clearInterval(interval);
+      interval = setInterval(gameTick, SPEED);
+    }
+
+    function placeFood() {
+      let emptyCells = [];
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          if (!snake.some(seg => seg.x === x && seg.y === y)) {
+            emptyCells.push({x, y});
+          }
+        }
+      }
+      food = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    }
+
+    function gameTick() {
+      if (gameOver) return;
+      direction = {...nextDirection};
+      const newHead = {x: snake[0].x + direction.x, y: snake[0].y + direction.y};
+      // Check wall collision
+      if (
+        newHead.x < 0 || newHead.x >= GRID_SIZE ||
+        newHead.y < 0 || newHead.y >= GRID_SIZE
+      ) {
+        endGame();
+        return;
+      }
+      // Check self collision
+      if (snake.some(seg => seg.x === newHead.x && seg.y === newHead.y)) {
+        endGame();
+        return;
+      }
+      snake.unshift(newHead);
+      // Check food
+      if (food && newHead.x === food.x && newHead.y === food.y) {
+        score++;
+        eatSound.currentTime = 0;
+        eatSound.play();
+        placeFood();
+        updateScore();
+      } else {
+        snake.pop();
+      }
+      render();
+    }
+
+    function endGame() {
+      gameOver = true;
+      clearInterval(interval);
+      finalScoreDiv.textContent = `Your Score: ${score}`;
+      gameOverDiv.style.display = 'block';
+      gameoverSound.currentTime = 0;
+      gameoverSound.play();
+    }
+
+    function updateScore() {
+      scoreDiv.textContent = `Score: ${score}`;
+    }
+
+    function render() {
+      // Clear all
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          const cell = document.getElementById(`cell-${x}-${y}`);
+          cell.className = 'cell';
+        }
+      }
+      // Draw snake
+      snake.forEach((seg, i) => {
+        const cell = document.getElementById(`cell-${seg.x}-${seg.y}`);
+        if (cell) cell.classList.add(i === 0 ? 'snake-head' : 'snake');
+      });
+      // Draw food
+      if (food) {
+        const cell = document.getElementById(`cell-${food.x}-${food.y}`);
+        if (cell) cell.classList.add('food');
+      }
+    }
+
+    // --- Controls ---
+    document.addEventListener('keydown', e => {
+      if (gameOver && (e.key === 'Enter' || e.key === ' ')) {
+        resetGame();
+        return;
+      }
+      let newDir = null;
+      if (e.key === 'ArrowUp' && direction.y !== 1) newDir = {x: 0, y: -1};
+      else if (e.key === 'ArrowDown' && direction.y !== -1) newDir = {x: 0, y: 1};
+      else if (e.key === 'ArrowLeft' && direction.x !== 1) newDir = {x: -1, y: 0};
+      else if (e.key === 'ArrowRight' && direction.x !== -1) newDir = {x: 1, y: 0};
+      if (newDir) {
+        nextDirection = newDir;
+      }
+    });
+
+    restartBtn.addEventListener('click', resetGame);
+
+    // --- Start ---
+    createGrid();
+    resetGame();
+  </script>
+</body>
+</html>
