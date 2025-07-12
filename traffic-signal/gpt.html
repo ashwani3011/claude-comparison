@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Traffic Light GPT</title>
+  <style>
+    body {
+      background: #222;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 50px;
+    }
+
+    .traffic-light {
+      width: 100px;
+      background: #333;
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    .light {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto;
+      border-radius: 50%;
+      background-color: #555;
+      opacity: 0.4;
+      transition: background-color 0.5s, opacity 0.5s;
+      position: relative;
+    }
+
+    .light.on {
+      opacity: 1;
+      box-shadow: 0 0 20px 5px rgba(255,255,255,0.2);
+    }
+
+    .red.on    { background-color: red; }
+    .yellow.on { background-color: yellow; }
+    .green.on  { background-color: green; }
+
+    .countdown {
+      position: absolute;
+      top: 18px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-weight: bold;
+      color: black;
+      font-size: 18px;
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button#start { background-color: #4CAF50; color: white; }
+    button#stop  { background-color: #f44336; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>Traffic Light GPT</h1>
+
+  <div class="traffic-light">
+    <div class="light red"><div class="countdown" id="red-timer"></div></div>
+    <div class="light yellow"><div class="countdown" id="yellow-timer"></div></div>
+    <div class="light green"><div class="countdown" id="green-timer"></div></div>
+  </div>
+
+  <div class="controls">
+    <button id="start">Start</button>
+    <button id="stop">Stop</button>
+  </div>
+
+  <script>
+    const lights = {
+      red: { el: document.querySelector('.red'), duration: 4, timer: document.getElementById('red-timer') },
+      green: { el: document.querySelector('.green'), duration: 3, timer: document.getElementById('green-timer') },
+      yellow: { el: document.querySelector('.yellow'), duration: 1, timer: document.getElementById('yellow-timer') },
+    };
+
+    const sequence = ['red', 'green', 'yellow'];
+    let current = 0;
+    let intervalId = null;
+    let countdownId = null;
+    let remainingTime = 0;
+
+    function setActiveLight(color) {
+      for (let key in lights) {
+        lights[key].el.classList.remove('on');
+        lights[key].timer.textContent = '';
+      }
+
+      const light = lights[color];
+      light.el.classList.add('on');
+      remainingTime = light.duration;
+      light.timer.textContent = remainingTime;
+
+      countdownId = setInterval(() => {
+        remainingTime--;
+        light.timer.textContent = remainingTime;
+        if (remainingTime <= 0) clearInterval(countdownId);
+      }, 1000);
+    }
+
+    function nextLight() {
+      current = (current + 1) % sequence.length;
+      setActiveLight(sequence[current]);
+    }
+
+    function startSimulation() {
+      if (intervalId) return;
+      setActiveLight(sequence[current]);
+      intervalId = setInterval(() => {
+        nextLight();
+      }, lights[sequence[current]].duration * 1000);
+    }
+
+    function stopSimulation() {
+      clearInterval(intervalId);
+      clearInterval(countdownId);
+      intervalId = null;
+    }
+
+    document.getElementById('start').addEventListener('click', () => {
+      stopSimulation(); // Reset before starting
+      startSimulation();
+    });
+
+    document.getElementById('stop').addEventListener('click', stopSimulation);
+  </script>
+
+</body>
+</html>

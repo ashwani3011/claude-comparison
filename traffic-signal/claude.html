@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Signal Claude</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .traffic-light {
+            background: #333;
+            border-radius: 25px;
+            padding: 20px;
+            margin: 20px auto;
+            width: 120px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            border: 3px solid #555;
+            position: relative;
+        }
+
+        .light {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 15px auto;
+            border: 3px solid #222;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .light::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 30%;
+            width: 30%;
+            height: 30%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .light.active::before {
+            opacity: 1;
+        }
+
+        .red {
+            background: #444;
+            box-shadow: inset 0 0 20px rgba(255, 0, 0, 0.1);
+        }
+
+        .red.active {
+            background: #ff4444;
+            box-shadow: 0 0 30px rgba(255, 68, 68, 0.6), inset 0 0 20px rgba(255, 0, 0, 0.3);
+            animation: pulse-red 1s ease-in-out infinite alternate;
+        }
+
+        .yellow {
+            background: #444;
+            box-shadow: inset 0 0 20px rgba(255, 255, 0, 0.1);
+        }
+
+        .yellow.active {
+            background: #ffff44;
+            box-shadow: 0 0 30px rgba(255, 255, 68, 0.6), inset 0 0 20px rgba(255, 255, 0, 0.3);
+            animation: pulse-yellow 1s ease-in-out infinite alternate;
+        }
+
+        .green {
+            background: #444;
+            box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.1);
+        }
+
+        .green.active {
+            background: #44ff44;
+            box-shadow: 0 0 30px rgba(68, 255, 68, 0.6), inset 0 0 20px rgba(0, 255, 0, 0.3);
+            animation: pulse-green 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 30px rgba(255, 68, 68, 0.6), inset 0 0 20px rgba(255, 0, 0, 0.3); }
+            100% { box-shadow: 0 0 40px rgba(255, 68, 68, 0.8), inset 0 0 30px rgba(255, 0, 0, 0.5); }
+        }
+
+        @keyframes pulse-yellow {
+            0% { box-shadow: 0 0 30px rgba(255, 255, 68, 0.6), inset 0 0 20px rgba(255, 255, 0, 0.3); }
+            100% { box-shadow: 0 0 40px rgba(255, 255, 68, 0.8), inset 0 0 30px rgba(255, 255, 0, 0.5); }
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 30px rgba(68, 255, 68, 0.6), inset 0 0 20px rgba(0, 255, 0, 0.3); }
+            100% { box-shadow: 0 0 40px rgba(68, 255, 68, 0.8), inset 0 0 30px rgba(0, 255, 0, 0.5); }
+        }
+
+        .status {
+            margin: 20px 0;
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .countdown {
+            font-size: 2em;
+            margin: 10px 0;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-weight: bold;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 1em;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .start-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .start-btn:hover {
+            background: linear-gradient(45deg, #45a049, #4CAF50);
+        }
+
+        .stop-btn {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .stop-btn:hover {
+            background: linear-gradient(45deg, #d32f2f, #f44336);
+        }
+
+        .reset-btn {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: linear-gradient(45deg, #1976D2, #2196F3);
+        }
+
+        .current-light {
+            padding: 8px 16px;
+            border-radius: 15px;
+            margin: 10px 0;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .current-red {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            border: 2px solid #ff4444;
+        }
+
+        .current-yellow {
+            background: rgba(255, 255, 68, 0.2);
+            color: #ffff44;
+            border: 2px solid #ffff44;
+        }
+
+        .current-green {
+            background: rgba(68, 255, 68, 0.2);
+            color: #44ff44;
+            border: 2px solid #44ff44;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚦 Traffic Signal Claude</h1>
+        
+        <div class="traffic-light">
+            <div class="light red" id="redLight"></div>
+            <div class="light yellow" id="yellowLight"></div>
+            <div class="light green" id="greenLight"></div>
+        </div>
+        
+        <div class="status">
+            <div class="current-light" id="currentLight">Red Light</div>
+            <div class="countdown" id="countdown">4</div>
+            <div>seconds remaining</div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn start-btn" id="startBtn">Start</button>
+            <button class="btn stop-btn" id="stopBtn">Stop</button>
+            <button class="btn reset-btn" id="resetBtn">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        class TrafficLight {
+            constructor() {
+                this.lights = {
+                    red: { duration: 4000, element: document.getElementById('redLight') },
+                    green: { duration: 3000, element: document.getElementById('greenLight') },
+                    yellow: { duration: 1000, element: document.getElementById('yellowLight') }
+                };
+                
+                this.sequence = ['red', 'green', 'yellow'];
+                this.currentIndex = 0;
+                this.currentLight = 'red';
+                this.isRunning = false;
+                this.timeRemaining = 4;
+                this.intervalId = null;
+                this.countdownId = null;
+                
+                this.elements = {
+                    startBtn: document.getElementById('startBtn'),
+                    stopBtn: document.getElementById('stopBtn'),
+                    resetBtn: document.getElementById('resetBtn'),
+                    countdown: document.getElementById('countdown'),
+                    currentLight: document.getElementById('currentLight')
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.updateDisplay();
+                this.bindEvents();
+                this.activateLight('red');
+            }
+            
+            bindEvents() {
+                this.elements.startBtn.addEventListener('click', () => this.start());
+                this.elements.stopBtn.addEventListener('click', () => this.stop());
+                this.elements.resetBtn.addEventListener('click', () => this.reset());
+            }
+            
+            start() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.elements.startBtn.disabled = true;
+                this.elements.stopBtn.disabled = false;
+                
+                this.runCycle();
+            }
+            
+            stop() {
+                this.isRunning = false;
+                this.elements.startBtn.disabled = false;
+                this.elements.stopBtn.disabled = true;
+                
+                if (this.intervalId) {
+                    clearTimeout(this.intervalId);
+                    this.intervalId = null;
+                }
+                
+                if (this.countdownId) {
+                    clearInterval(this.countdownId);
+                    this.countdownId = null;
+                }
+            }
+            
+            reset() {
+                this.stop();
+                this.currentIndex = 0;
+                this.currentLight = 'red';
+                this.timeRemaining = 4;
+                this.activateLight('red');
+                this.updateDisplay();
+            }
+            
+            runCycle() {
+                if (!this.isRunning) return;
+                
+                const light = this.sequence[this.currentIndex];
+                this.currentLight = light;
+                this.timeRemaining = this.lights[light].duration / 1000;
+                
+                this.activateLight(light);
+                this.updateDisplay();
+                this.startCountdown();
+                
+                this.intervalId = setTimeout(() => {
+                    this.currentIndex = (this.currentIndex + 1) % this.sequence.length;
+                    this.runCycle();
+                }, this.lights[light].duration);
+            }
+            
+            startCountdown() {
+                if (this.countdownId) {
+                    clearInterval(this.countdownId);
+                }
+                
+                this.countdownId = setInterval(() => {
+                    this.timeRemaining--;
+                    this.updateCountdown();
+                    
+                    if (this.timeRemaining <= 0) {
+                        clearInterval(this.countdownId);
+                        this.countdownId = null;
+                    }
+                }, 1000);
+            }
+            
+            activateLight(lightName) {
+                // Deactivate all lights
+                Object.values(this.lights).forEach(light => {
+                    light.element.classList.remove('active');
+                });
+                
+                // Activate current light
+                this.lights[lightName].element.classList.add('active');
+            }
+            
+            updateDisplay() {
+                const lightName = this.currentLight.charAt(0).toUpperCase() + this.currentLight.slice(1);
+                this.elements.currentLight.textContent = `${lightName} Light`;
+                this.elements.currentLight.className = `current-light current-${this.currentLight}`;
+                this.updateCountdown();
+            }
+            
+            updateCountdown() {
+                this.elements.countdown.textContent = Math.max(0, this.timeRemaining);
+            }
+        }
+        
+        // Initialize the traffic light simulation
+        document.addEventListener('DOMContentLoaded', () => {
+            new TrafficLight();
+        });
+    </script>
+</body>
+</html>
